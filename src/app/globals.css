@@ -59,219 +59,25 @@
 }
 
 @layer components {
-  .code-block {
-    @apply bg-muted p-4 rounded-md overflow-x-auto text-sm;
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground;
   }
-  .markdown-body {
-    @apply prose prose-sm max-w-none dark:prose-invert;
+  .sidebar-item.active {
+    @apply bg-primary text-primary-foreground;
   }
-  .markdown-body h1 {
-    @apply text-2xl font-bold mb-4;
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
   }
-  .markdown-body h2 {
-    @apply text-xl font-semibold mb-3;
+  .empty-state {
+    @apply flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center;
   }
-  .markdown-body h3 {
-    @apply text-lg font-medium mb-2;
+  .toast {
+    @apply fixed bottom-4 right-4 z-50 max-w-md rounded-lg border bg-background p-4 shadow-lg transition-all duration-300 transform translate-y-0 opacity-100;
   }
-  .markdown-body p {
-    @apply mb-4;
+  .toast-enter {
+    @apply translate-y-4 opacity-0;
   }
-  .markdown-body ul, .markdown-body ol {
-    @apply mb-4 pl-5;
-  }
-  .markdown-body li {
-    @apply mb-1;
-  }
-  .markdown-body code {
-    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
-  }
-  .markdown-body pre {
-    @apply code-block;
-  }
-  .markdown-body blockquote {
-    @apply border-l-4 border-primary pl-4 italic my-4;
-  }
-  .markdown-body a {
-    @apply text-primary hover:underline;
-  }
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground));
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--foreground));
-}
-
-/* Drag and drop styles */
-.dragging {
-  @apply opacity-50 cursor-grabbing;
-}
-
-.drag-over {
-  @apply bg-muted border-dashed border-2 border-primary;
-}
-
-/* Toast animations */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-.toast-enter {
-  animation: slide-in 0.3s ease-out forwards;
-}
-
-.toast-exit {
-  animation: slide-out 0.3s ease-out forwards;
-}
-
-/* Command palette styles */
-.cmdk {
-  @apply bg-card border border-border rounded-lg shadow-lg overflow-hidden;
-}
-
-.cmdk-input {
-  @apply w-full bg-transparent border-none outline-none px-4 py-3 text-foreground;
-}
-
-.cmdk-item {
-  @apply px-4 py-2 cursor-pointer hover:bg-accent transition-colors;
-}
-
-.cmdk-item-active {
-  @apply bg-accent text-accent-foreground;
-}
-
-.cmdk-separator {
-  @apply border-t border-border my-1;
-}
-
-/* Kanban board styles */
-.kanban-column {
-  @apply flex flex-col min-w-72 bg-muted rounded-lg p-4;
-}
-
-.kanban-column-header {
-  @apply flex justify-between items-center mb-4;
-}
-
-.kanban-ticket {
-  @apply bg-background border border-border rounded-lg p-3 mb-3 cursor-move shadow-sm hover:shadow-md transition-shadow;
-}
-
-/* Mood tracker styles */
-.mood-emoji {
-  @apply text-3xl cursor-pointer transition-transform hover:scale-110;
-}
-
-.mood-emoji-selected {
-  @apply scale-125 ring-2 ring-primary rounded-full;
-}
-
-/* CI/CD monitor styles */
-.ci-status-success {
-  @apply bg-green-500 text-white;
-}
-
-.ci-status-failed {
-  @apply bg-red-500 text-white;
-}
-
-.ci-status-running {
-  @apply bg-blue-500 text-white;
-}
-
-.ci-status-pending {
-  @apply bg-yellow-500 text-white;
-}
-
-/* Documentation finder styles */
-.doc-result-card {
-  @apply bg-background border border-border rounded-lg p-4 hover:bg-accent transition-colors cursor-pointer;
-}
-
-.doc-result-card-bookmarked {
-  @apply ring-2 ring-primary;
-}
-
-/* Knowledge base styles */
-.kb-article-card {
-  @apply bg-background border border-border rounded-lg p-4 hover:bg-accent transition-colors cursor-pointer;
-}
-
-.kb-article-tag {
-  @apply bg-muted text-muted-foreground px-2 py-1 rounded text-xs;
-}
-
-/* Settings styles */
-.settings-section {
-  @apply mb-8;
-}
-
-.settings-section-title {
-  @apply text-lg font-semibold mb-4;
-}
-
-.settings-item {
-  @apply flex justify-between items-center py-3 border-b border-border;
-}
-
-.settings-item:last-child {
-  @apply border-b-0;
-}
-
-/* Responsive sidebar */
-@media (max-width: 768px) {
-  .sidebar {
-    @apply fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border transform -translate-x-full transition-transform duration-300 ease-in-out;
-  }
-
-  .sidebar-open {
-    @apply translate-x-0;
-  }
-
-  .sidebar-overlay {
-    @apply fixed inset-0 z-40 bg-black bg-opacity-50;
-  }
-}
-
-@media (min-width: 769px) {
-  .sidebar {
-    @apply fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border;
-  }
-
-  .sidebar-overlay {
-    @apply hidden;
+  .toast-exit {
+    @apply translate-y-0 opacity-0;
   }
 }
