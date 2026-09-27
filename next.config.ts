@@ -2,14 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts']
+    appDir: true,
   },
-  typescript: {
-    ignoreBuildErrors: false
-  },
-  eslint: {
-    ignoreDuringBuilds: false
-  }
 };
 
 export default nextConfig;

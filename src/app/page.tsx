@@ -1,47 +1,37 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Code, Bug, Calendar, Smile, Search, Activity, Book, Settings, Plus, Trash2, Edit, X, Check, AlertCircle, Copy, Filter, Calendar as CalendarIcon, TrendingUp, TrendingDown, BarChart3, Clock, ChevronLeft, ChevronRight, GitCommit, Server, Zap, Folder, FileText, Hash, Tag, ChevronDown, ChevronUp, Star, Bookmark, History, User, Users, Award, LayoutDashboard, Kanban, BookMarked, BookOpen, Sun, Moon, Inbox, CheckCircle, XCircle, AlertTriangle, Info} from 'lucide-react';
+import { Code, Bug, Calendar, Smile, Search, Activity, Book, Settings, Plus, Trash2, Edit, X, Check, AlertCircle, Filter, Copy, CalendarDays, TrendingUp, BarChart3, Clock, Users, Bookmark, Star, GitBranch, Zap, FileText, Folder, Tag, Hash, ChevronDown, ChevronUp, Menu, Moon, Sun, Download, Upload, RotateCcw, CheckCircle, XCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, LayoutDashboard, Inbox, Brain, BookOpen } from "lucide-react";
 import { format, formatDistanceToNow } from 'date-fns';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { marked } from 'marked';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 // Types
-type Language = 'JavaScript' | 'TypeScript' | 'Python';
-type Severity = 'critical' | 'major' | 'minor' | 'cosmetic';
-type Status = 'open' | 'in-progress' | 'resolved';
-type Category = 'ui' | 'logic' | 'performance' | 'security';
-
-interface Snippet {
+type Snippet = {
   id: string;
   title: string;
-  language: Language;
+  language: 'JavaScript' | 'TypeScript' | 'Python';
   code: string;
   tags: string[];
   description: string;
   createdAt: string;
   updatedAt: string;
-}
+};
 
-interface Bug {
+type Bug = {
   id: string;
   title: string;
   description: string;
-  severity: Severity;
-  status: Status;
-  category: Category;
+  severity: 'critical' | 'major' | 'minor' | 'cosmetic';
+  status: 'open' | 'in-progress' | 'resolved';
+  category: 'ui' | 'logic' | 'performance' | 'security';
   createdAt: string;
   updatedAt: string;
-}
+  assignedTo?: string;
+};
 
-interface KanbanColumn {
-  id: string;
-  title: string;
-  ticketIds: string[];
-}
-
-interface KanbanTicket {
+type Ticket = {
   id: string;
   title: string;
   description: string;
@@ -49,46 +39,48 @@ interface KanbanTicket {
   priority: 'low' | 'medium' | 'high';
   storyPoints: number;
   labels: string[];
-  columnId: string;
+  column: string;
   createdAt: string;
   updatedAt: string;
-}
+};
 
-interface MoodEntry {
+type MoodEntry = {
   id: string;
-  mood: '😊' | '🙃' | '😐' | '😕' | '😢';
-  note: string;
   date: string;
-}
+  mood: '😊' | '🙃' | '😐' | '😕' | '😢';
+  note?: string;
+  userId: string;
+};
 
-interface DocumentationResult {
+type DocumentationResult = {
   id: string;
   title: string;
   url: string;
   snippet: string;
   lastUpdated: string;
-  content: string;
-  isBookmarked: boolean;
   category: string;
-}
+  isBookmarked: boolean;
+  content?: string;
+};
 
-interface CICDProject {
+type BuildStatus = 'success' | 'failed' | 'running' | 'pending';
+type Project = {
   id: string;
   name: string;
-  status: 'success' | 'failed' | 'running' | 'pending';
-  lastBuildTime: number;
+  status: BuildStatus;
+  lastBuildTime: number; // in seconds
   commitHash: string;
   commitMessage: string;
   buildNumber: number;
   environment: 'dev' | 'staging' | 'production';
   history: Array<{
-    status: 'success' | 'failed' | 'running' | 'pending';
+    status: BuildStatus;
     duration: number;
     timestamp: string;
   }>;
-}
+};
 
-interface KnowledgeArticle {
+type KnowledgeArticle = {
   id: string;
   title: string;
   content: string;
@@ -101,21 +93,22 @@ interface KnowledgeArticle {
     timestamp: string;
   }>;
   linkedProjects: string[];
-}
+};
 
-interface ActivityItem {
+type Command = {
   id: string;
-  type: 'snippet' | 'bug' | 'ticket' | 'mood' | 'doc' | 'cicd' | 'kb';
-  action: 'created' | 'updated' | 'deleted';
   title: string;
-  timestamp: string;
-}
+  category: 'navigation' | 'actions' | 'recent';
+  action: () => void;
+  shortcut: string;
+};
 
-interface Settings {
-  theme: 'light' | 'dark';
-  notifications: boolean;
-  autoSave: boolean;
-}
+type Toast = {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  timestamp: string;
+};
 
 // Utility functions
 const playSound = (type: 'success' | 'error' | 'alert') => {
@@ -143,19 +136,15 @@ const playSound = (type: 'success' | 'error' | 'alert') => {
       case 'alert':
         oscillator.frequency.value = 660;
         gainNode.gain.value = 0.3;
-        oscillator.start();
+        oscillator.start(audioContext.currentTime + 0.1);
         oscillator.stop(audioContext.currentTime + 0.1);
-        setTimeout(() => {
-          const oscillator2 = audioContext.createOscillator();
-          oscillator2.frequency.value = 660;
-          oscillator2.connect(gainNode);
-          oscillator2.start();
-          oscillator2.stop(audioContext.currentTime + 0.1);
-        }, 150);
+        oscillator.frequency.value = 660;
+        oscillator.start(audioContext.currentTime + 0.15);
+        oscillator.stop(audioContext.currentTime + 0.25);
         break;
     }
   } catch (e) {
-    console.log('Audio not supported');
+    console.error('Web Audio API not supported:', e);
   }
 };
 
@@ -163,7 +152,7 @@ const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
   if (typeof window === 'undefined') return defaultValue;
   
   try {
-    const item = localStorage.getItem(key);
+    const item = window.localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (e) {
     console.error(`Error loading from localStorage:`, e);
@@ -171,566 +160,649 @@ const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
-const saveToStorage = <T,>(key: string, value: T): void => {
+const saveToStorage = <T,>(key: string, value: T) => {
   if (typeof window === 'undefined') return;
   
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.error(`Error saving to localStorage:`, e);
   }
 };
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MMM dd, yyyy');
 };
 
-const formatDateTime = (dateString: string): string => {
+const formatDateTime = (dateString: string) => {
   return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
 };
 
-const formatDuration = (seconds: number): string => {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+const formatDuration = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 };
 
-const generateId = (): string => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
-
-const truncateText = (text: string, maxLength: number): string => {
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-};
-
-const highlightSearchTerm = (text: string, term: string): JSX.Element => {
-  if (!term) return <span>{text}</span>;
-  
-  const regex = new RegExp(`(${term})`, 'gi');
-  const parts = text.split(regex);
+const highlightSyntax = (code: string, language: string) => {
+  // Simple syntax highlighting with Tailwind classes
+  const keywords = ['function', 'const', 'let', 'var', 'if', 'else', 'return', 'class', 'import', 'export', 'async', 'await'];
+  const highlightedCode = code
+    .replace(/(\bfunction\b)/g, '<span class="text-purple-500">$1</span>')
+    .replace(/(\bconst\b|\blet\b|\bvar\b)/g, '<span class="text-blue-500">$1</span>')
+    .replace(/(\bif\b|\belse\b|\breturn\b)/g, '<span class="text-green-500">$1</span>')
+    .replace(/(\bclass\b)/g, '<span class="text-yellow-500">$1</span>')
+    .replace(/(\bimport\b|\bexport\b)/g, '<span class="text-pink-500">$1</span>')
+    .replace(/(\basync\b|\bawait\b)/g, '<span class="text-indigo-500">$1</span>');
   
   return (
-    <span>
-      {parts.map((part, index) => 
-        regex.test(part) ? <mark key={index} className="bg-yellow-200 dark:bg-yellow-800">{part}</mark> : part
-      )}
-    </span>
+    <pre className="bg-gray-800 p-4 rounded-lg overflow-x-auto">
+      <code 
+        className={`language-${language.toLowerCase()}`} 
+        dangerouslySetInnerHTML={{ __html: highlightedCode }}
+      />
+    </pre>
   );
 };
 
-const renderMarkdown = (markdown: string): string => {
-  return marked(markdown);
+const renderMarkdown = (markdown: string) => {
+  return marked.parse(markdown);
 };
 
+const copyToClipboard = (text: string) => {
+  navigator.clipboard.writeText(text);
+  return true;
+};
 
-function SnippetsManager() {
-  const [snippets, setSnippets] = useState<Snippet[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [languageFilter, setLanguageFilter] = useState<'all' | 'javascript' | 'typescript' | 'python'>('all');
-  const [newSnippet, setNewSnippet] = useState({ title: '', language: 'javascript', code: '', tags: '', description: '' });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
 
-  const filteredSnippets = snippets.filter(snippet => {
-    const matchesSearch = snippet.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         snippet.tags.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         snippet.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLanguage = languageFilter === 'all' || snippet.language === languageFilter;
-    return matchesSearch && matchesLanguage;
+// Feature 1: Code Snippet Manager
+const CodeSnippetManager = ({ 
+  snippets, 
+  setSnippets, 
+  searchQuery, 
+  setSearchQuery, 
+  languageFilter, 
+  setLanguageFilter,
+  showToast 
+}: {
+  snippets: Snippet[];
+  setSnippets: (snippets: Snippet[]) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  languageFilter: 'All' | 'JavaScript' | 'TypeScript' | 'Python';
+  setLanguageFilter: (filter: 'All' | 'JavaScript' | 'TypeScript' | 'Python') => void;
+  showToast: (toast: Omit<Toast, 'id' | 'timestamp'>) => void;
+}) => {
+  const [newSnippet, setNewSnippet] = useState<Omit<Snippet, 'id' | 'createdAt' | 'updatedAt'>>({
+    title: '',
+    language: 'JavaScript',
+    code: '',
+    tags: [],
+    description: ''
   });
-
-  const handleSaveSnippet = () => {
-    if (!newSnippet.title.trim() || !newSnippet.code.trim()) return;
-
-    if (editingId) {
-      setSnippets(prev => prev.map(s => s.id === editingId ? { ...s, ...newSnippet, updatedAt: new Date().toISOString() } : s));
-      showToast('Snippet updated', 'success');
-    } else {
-      const snippet: Snippet = {
-        id: generateId(),
-        ...newSnippet,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setSnippets(prev => [...prev, snippet]);
-      showToast('Snippet saved', 'success');
+  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState('');
+  
+  const filteredSnippets = useMemo(() => {
+    return snippets.filter(snippet => {
+      const matchesSearch = !searchQuery || 
+        snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        snippet.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        snippet.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        snippet.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesLanguage = languageFilter === 'All' || snippet.language === languageFilter;
+      
+      return matchesSearch && matchesLanguage;
+    });
+  }, [snippets, searchQuery, languageFilter]);
+  
+  const handleAddSnippet = () => {
+    if (!newSnippet.title.trim() || !newSnippet.code.trim()) {
+      showToast({ type: 'warning', message: 'Title and code are required' });
+      return;
     }
-
-    setNewSnippet({ title: '', language: 'javascript', code: '', tags: '', description: '' });
+    
+    const snippet: Snippet = {
+      id: generateId(),
+      ...newSnippet,
+      tags: newSnippet.tags.filter(tag => tag.trim() !== ''),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    setSnippets([...snippets, snippet]);
+    setNewSnippet({
+      title: '',
+      language: 'JavaScript',
+      code: '',
+      tags: [],
+      description: ''
+    });
+    setShowAddForm(false);
+    setTagInput('');
+    showToast({ type: 'success', message: 'Snippet saved successfully' });
+    playSound('success');
+  };
+  
+  const handleEditSnippet = (id: string) => {
+    const snippet = snippets.find(s => s.id === id);
+    if (snippet) {
+      setEditingId(id);
+      setNewSnippet({
+        title: snippet.title,
+        language: snippet.language,
+        code: snippet.code,
+        tags: [...snippet.tags],
+        description: snippet.description
+      });
+      setShowAddForm(true);
+    }
+  };
+  
+  const handleUpdateSnippet = () => {
+    if (!newSnippet.title.trim() || !newSnippet.code.trim() || !editingId) {
+      showToast({ type: 'warning', message: 'Title and code are required' });
+      return;
+    }
+    
+    setSnippets(snippets.map(snippet => 
+      snippet.id === editingId 
+        ? { 
+            ...snippet, 
+            ...newSnippet, 
+            tags: newSnippet.tags.filter(tag => tag.trim() !== ''),
+            updatedAt: new Date().toISOString()
+          }
+        : snippet
+    ));
+    
     setEditingId(null);
-    setShowPreview(false);
+    setNewSnippet({
+      title: '',
+      language: 'JavaScript',
+      code: '',
+      tags: [],
+      description: ''
+    });
+    setShowAddForm(false);
+    setTagInput('');
+    showToast({ type: 'success', message: 'Snippet updated successfully' });
+    playSound('success');
   };
-
-  const handleEditSnippet = (snippet: Snippet) => {
-    setNewSnippet({ ...snippet });
-    setEditingId(snippet.id);
-    setShowPreview(false);
-  };
-
+  
   const handleDeleteSnippet = (id: string) => {
-    setSnippets(prev => prev.filter(s => s.id !== id));
-    setShowDeleteConfirm(null);
-    showToast('Snippet deleted', 'success');
-  };
-
-  const handleCopyToClipboard = (code: string) => {
-    navigator.clipboard.writeText(code);
-    showToast('Code copied to clipboard', 'success');
-  };
-
-  const languageOptions = [
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'typescript', label: 'TypeScript' },
-    { value: 'python', label: 'Python' }
-  ];
-
-  const getLanguageColor = (language: string) => {
-    switch (language) {
-      case 'javascript': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'typescript': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'python': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    if (confirm('Are you sure you want to delete this snippet?')) {
+      setSnippets(snippets.filter(snippet => snippet.id !== id));
+      showToast({ type: 'success', message: 'Snippet deleted' });
+      playSound('alert');
     }
   };
-
+  
+  const handleAddTag = () => {
+    if (tagInput.trim() && !newSnippet.tags.includes(tagInput.trim())) {
+      setNewSnippet({
+        ...newSnippet,
+        tags: [...newSnippet.tags, tagInput.trim()]
+      });
+      setTagInput('');
+    }
+  };
+  
+  const handleRemoveTag = (tag: string) => {
+    setNewSnippet({
+      ...newSnippet,
+      tags: newSnippet.tags.filter(t => t !== tag)
+    });
+  };
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Code Snippets</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Code Snippets</h2>
         <button 
-          onClick={() => { setNewSnippet({ title: '', language: 'javascript', code: '', tags: '', description: '' }); setEditingId(null); setShowPreview(false); }}
-          className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
         >
-          <Plus size={16} /> New Snippet
+          <Plus className="w-4 h-4" />
+          {editingId ? 'Edit Snippet' : 'New Snippet'}
         </button>
       </div>
-
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search snippets..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-violet-500 focus:outline-none"
-          />
-        </div>
-        <div className="w-48">
-          <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value as any)}
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-violet-500 focus:outline-none"
-          >
-            <option value="all">All Languages</option>
-            {languageOptions.map(option => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {editingId && (
-        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">{editingId ? 'Edit Snippet' : 'New Snippet'}</h3>
-            <button 
-              onClick={() => { setEditingId(null); setNewSnippet({ title: '', language: 'javascript', code: '', tags: '', description: '' }); }}
-              className="text-gray-400 hover:text-gray-200"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
+      
+      {showAddForm && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Snippet' : 'Add New Snippet'}</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
               <input
                 type="text"
                 value={newSnippet.title}
                 onChange={(e) => setNewSnippet({...newSnippet, title: e.target.value})}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Snippet title"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Language</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Language</label>
               <select
                 value={newSnippet.language}
-                onChange={(e) => setNewSnippet({...newSnippet, language: e.target.value})}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                onChange={(e) => setNewSnippet({...newSnippet, language: e.target.value as any})}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                {languageOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
+                <option value="JavaScript">JavaScript</option>
+                <option value="TypeScript">TypeScript</option>
+                <option value="Python">Python</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
-              <input
-                type="text"
-                value={newSnippet.tags}
-                onChange={(e) => setNewSnippet({...newSnippet, tags: e.target.value})}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                placeholder="react, hooks, api"
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code</label>
+              <textarea
+                value={newSnippet.code}
+                onChange={(e) => setNewSnippet({...newSnippet, code: e.target.value})}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                placeholder="Paste your code here"
               />
             </div>
             
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium">Code</label>
-                <button 
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="text-sm text-violet-400 hover:text-violet-300"
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Add a tag"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                />
+                <button
+                  onClick={handleAddTag}
+                  className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                 >
-                  {showPreview ? 'Edit' : 'Preview'}
+                  Add
                 </button>
               </div>
-              
-              {showPreview ? (
-                <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                  <pre className="text-sm">
-                    <code className={getLanguageColor(newSnippet.language)}>
-                      {renderMarkdown(newSnippet.code)}
-                    </code>
-                  </pre>
-                </div>
-              ) : (
-                <textarea
-                  value={newSnippet.code}
-                  onChange={(e) => setNewSnippet({...newSnippet, code: e.target.value})}
-                  rows={8}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none font-mono text-sm"
-                  placeholder="// Your code here..."
-                />
-              )}
+              <div className="flex flex-wrap gap-2">
+                {newSnippet.tags.map((tag, index) => (
+                  <span key={index} className="inline-flex items-center gap-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 px-2 py-1 rounded-md text-sm">
+                    {tag}
+                    <button 
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1">Description (Markdown)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Markdown)</label>
               <textarea
                 value={newSnippet.description}
                 onChange={(e) => setNewSnippet({...newSnippet, description: e.target.value})}
-                rows={4}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                placeholder="Describe your snippet..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="Describe your snippet (supports Markdown)"
               />
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex gap-2">
               <button
-                onClick={() => { setEditingId(null); setNewSnippet({ title: '', language: 'javascript', code: '', tags: '', description: '' }); }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                onClick={editingId ? handleUpdateSnippet : handleAddSnippet}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
               >
-                Cancel
+                {editingId ? 'Update Snippet' : 'Add Snippet'}
               </button>
               <button
-                onClick={handleSaveSnippet}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setEditingId(null);
+                  setNewSnippet({
+                    title: '',
+                    language: 'JavaScript',
+                    code: '',
+                    tags: [],
+                    description: ''
+                  });
+                  setTagInput('');
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
               >
-                {editingId ? 'Update' : 'Save'}
+                Cancel
               </button>
             </div>
           </div>
         </div>
       )}
-
+      
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Search snippets..."
+            />
+          </div>
+        </div>
+        
+        <div className="w-full sm:w-48">
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value as any)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            <option value="All">All Languages</option>
+            <option value="JavaScript">JavaScript</option>
+            <option value="TypeScript">TypeScript</option>
+            <option value="Python">Python</option>
+          </select>
+        </div>
+      </div>
+      
       {filteredSnippets.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
           <div className="text-5xl mb-4">💻</div>
-          <h3 className="text-xl font-semibold mb-2">No snippets found</h3>
-          <p className="text-gray-400 mb-4">
-            {snippets.length === 0 
-              ? "Save your first snippet to build your library" 
-              : "Try adjusting your search or filter"}
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">No snippets found</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {searchQuery || languageFilter !== 'All' 
+              ? 'Try adjusting your search or filter' 
+              : 'Save your first snippet to build your library'
+            }
           </p>
-          {snippets.length === 0 && (
+          {!searchQuery && languageFilter === 'All' && (
             <button 
-              onClick={() => { setNewSnippet({ title: '', language: 'javascript', code: '', tags: '', description: '' }); setEditingId(null); }}
-              className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg"
+              onClick={() => setShowAddForm(true)}
+              className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
             >
-              Create Your First Snippet
+              Add Your First Snippet
             </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredSnippets.map(snippet => (
-            <div key={snippet.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          {filteredSnippets.map((snippet) => (
+            <div key={snippet.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-lg">{snippet.title}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getLanguageColor(snippet.language)}`}>
-                    {snippet.language}
-                  </span>
+                  <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{snippet.title}</h3>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditSnippet(snippet.id)}
+                      className="p-1 text-gray-500 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-400"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSnippet(snippet.id)}
+                      className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 
-                {snippet.tags && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {snippet.tags.split(',').map((tag, index) => (
-                      <span key={index} className="text-xs bg-gray-700 px-2 py-1 rounded">
-                        {tag.trim()}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-md">
+                    {snippet.language}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {snippet.tags.map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-xs rounded-md">
+                        {tag}
                       </span>
                     ))}
                   </div>
-                )}
-                
-                <div className="mb-3">
-                  <pre className="bg-gray-900 p-3 rounded overflow-x-auto text-sm">
-                    <code className={getLanguageColor(snippet.language)}>
-                      {truncateText(snippet.code, 150)}
-                    </code>
-                  </pre>
                 </div>
                 
-                {snippet.description && (
-                  <div className="mb-3 text-sm text-gray-300">
-                    {renderMarkdown(truncateText(snippet.description, 100))}
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-center text-xs text-gray-400 mb-3">
-                  <span>Created: {formatDate(snippet.createdAt)}</span>
-                  {snippet.updatedAt !== snippet.createdAt && (
-                    <span>Updated: {formatDate(snippet.updatedAt)}</span>
+                <div className="mb-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Description:</div>
+                  {snippet.description ? (
+                    <div 
+                      className="text-gray-700 dark:text-gray-300 text-sm prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(snippet.description) }}
+                    />
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">No description</p>
                   )}
                 </div>
                 
-                <div className="flex justify-end gap-2">
-                  <button 
-                    onClick={() => handleCopyToClipboard(snippet.code)}
-                    className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded flex items-center gap-1"
+                <div className="mb-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Code:</div>
+                  <div className="text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded-md overflow-x-auto max-h-32">
+                    <pre className="text-gray-800 dark:text-gray-200 font-mono">{snippet.code}</pre>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => copyToClipboard(snippet.code)}
+                    className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400"
                   >
-                    <Copy size={14} /> Copy
+                    <Copy className="w-4 h-4" />
+                    Copy Code
                   </button>
-                  <button 
-                    onClick={() => handleEditSnippet(snippet)}
-                    className="text-sm bg-violet-600 hover:bg-violet-700 px-3 py-1 rounded flex items-center gap-1"
-                  >
-                    <Edit size={14} /> Edit
-                  </button>
-                  <button 
-                    onClick={() => setShowDeleteConfirm(snippet.id)}
-                    className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded flex items-center gap-1"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Updated {formatDistanceToNow(new Date(snippet.updatedAt), { addSuffix: true })}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Delete Snippet</h3>
-            <p className="text-gray-300 mb-6">Are you sure you want to delete this snippet? This action cannot be undone.</p>
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDeleteSnippet(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+};
 
-function BugTracker() {
-  const [bugs, setBugs] = useState<Bug[]>([]);
-  const [filters, setFilters] = useState({
-    severity: 'all' as 'all' | 'critical' | 'major' | 'minor' | 'cosmetic',
-    status: 'all' as 'all' | 'open' | 'in-progress' | 'resolved',
-    category: 'all' as 'all' | 'ui' | 'logic' | 'performance' | 'security'
+// Feature 2: Bug Tracker
+const BugTracker = ({ 
+  bugs, 
+  setBugs, 
+  showToast 
+}: {
+  bugs: Bug[];
+  setBugs: (bugs: Bug[]) => void;
+  showToast: (toast: Omit<Toast, 'id' | 'timestamp'>) => void;
+}) => {
+  const [newBug, setNewBug] = useState<Omit<Bug, 'id' | 'createdAt' | 'updatedAt'>>({
+    title: '',
+    description: '',
+    severity: 'major',
+    status: 'open',
+    category: 'ui'
   });
-  const [newBug, setNewBug] = useState({ title: '', description: '', severity: 'major' as BugSeverity, status: 'open' as BugStatus, category: 'ui' as BugCategory });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-
-  const filteredBugs = bugs.filter(bug => {
-    return (filters.severity === 'all' || bug.severity === filters.severity) &&
-           (filters.status === 'all' || bug.status === filters.status) &&
-           (filters.category === 'all' || bug.category === filters.category);
-  });
-
-  const handleSaveBug = () => {
-    if (!newBug.title.trim()) return;
-
-    if (editingId) {
-      setBugs(prev => prev.map(b => b.id === editingId ? { ...b, ...newBug, updatedAt: new Date().toISOString() } : b));
-      showToast('Bug updated', 'success');
+  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState<'all' | Bug['severity']>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | Bug['status']>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | Bug['category']>('all');
+  
+  const filteredBugs = useMemo(() => {
+    return bugs.filter(bug => {
+      const matchesSeverity = severityFilter === 'all' || bug.severity === severityFilter;
+      const matchesStatus = statusFilter === 'all' || bug.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || bug.category === categoryFilter;
+      
+      return matchesSeverity && matchesStatus && matchesCategory;
+    });
+  }, [bugs, severityFilter, statusFilter, categoryFilter]);
+  
+  const bugStats = useMemo(() => {
+    const severityCounts = {
+      critical: bugs.filter(b => b.severity === 'critical').length,
+      major: bugs.filter(b => b.severity === 'major').length,
+      minor: bugs.filter(b => b.severity === 'minor').length,
+      cosmetic: bugs.filter(b => b.severity === 'cosmetic').length
+    };
+    
+    // Create trend data for the last 14 days
+    const today = new Date();
+    const trendData = [];
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const created = bugs.filter(b => b.createdAt.startsWith(dateStr)).length;
+      const resolved = bugs.filter(b => b.status === 'resolved' && b.updatedAt.startsWith(dateStr)).length;
+      
+      trendData.push({
+        date: format(date, 'MMM dd'),
+        created,
+        resolved
+      });
+    }
+    
+    return { severityCounts, trendData };
+  }, [bugs]);
+  
+  const handleAddBug = () => {
+    if (!newBug.title.trim() || !newBug.description.trim()) {
+      showToast({ type: 'warning', message: 'Title and description are required' });
+      return;
+    }
+    
+    const bug: Bug = {
+      id: generateId(),
+      ...newBug,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    setBugs([...bugs, bug]);
+    setNewBug({
+      title: '',
+      description: '',
+      severity: 'major',
+      status: 'open',
+      category: 'ui'
+    });
+    setShowAddForm(false);
+    
+    // Play alert sound for critical bugs
+    if (bug.severity === 'critical') {
+      playSound('alert');
+      showToast({ type: 'error', message: 'Critical bug added!' });
     } else {
-      const bug: Bug = {
-        id: generateId(),
-        ...newBug,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setBugs(prev => [...prev, bug]);
-      
-      // Play sound for critical bugs
-      if (bug.severity === 'critical') {
-        playSound('alert');
-      }
-      
-      showToast('Bug reported', 'success');
+      showToast({ type: 'success', message: 'Bug added successfully' });
     }
-
-    setNewBug({ title: '', description: '', severity: 'major', status: 'open', category: 'ui' });
-    setEditingId(null);
   };
-
-  const handleEditBug = (bug: Bug) => {
-    setNewBug({ ...bug });
-    setEditingId(bug.id);
+  
+  const handleUpdateBug = (id: string, updates: Partial<Bug>) => {
+    setBugs(bugs.map(bug => 
+      bug.id === id 
+        ? { 
+            ...bug, 
+            ...updates, 
+            updatedAt: new Date().toISOString()
+          }
+        : bug
+    ));
+    
+    if (updates.severity === 'critical') {
+      playSound('alert');
+      showToast({ type: 'error', message: 'Critical bug updated!' });
+    } else {
+      showToast({ type: 'success', message: 'Bug updated successfully' });
+    }
   };
-
+  
   const handleDeleteBug = (id: string) => {
-    setBugs(prev => prev.filter(b => b.id !== id));
-    setShowDeleteConfirm(null);
-    showToast('Bug deleted', 'success');
+    if (confirm('Are you sure you want to delete this bug?')) {
+      setBugs(bugs.filter(bug => bug.id !== id));
+      showToast({ type: 'success', message: 'Bug deleted' });
+    }
   };
-
-  const getSeverityColor = (severity: BugSeverity) => {
+  
+  const getSeverityColor = (severity: Bug['severity']) => {
     switch (severity) {
-      case 'critical': return 'bg-red-500';
-      case 'major': return 'bg-orange-500';
-      case 'minor': return 'bg-yellow-500';
-      case 'cosmetic': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case 'critical': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'major': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'minor': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'cosmetic': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
-
-  const getStatusColor = (status: BugStatus) => {
+  
+  const getStatusColor = (status: Bug['status']) => {
     switch (status) {
-      case 'open': return 'bg-red-500';
-      case 'in-progress': return 'bg-yellow-500';
-      case 'resolved': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'open': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case 'in-progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     }
   };
-
-  // Prepare data for charts
-  const severityData = Object.entries(
-    bugs.reduce((acc, bug) => {
-      acc[bug.severity] = (acc[bug.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value }));
-
-  // Get last 14 days for trend chart
-  const last14Days = Array.from({ length: 14 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    return date.toISOString().split('T')[0];
-  }).reverse();
-
-  const trendData = last14Days.map(date => {
-    const created = bugs.filter(bug => bug.createdAt.startsWith(date)).length;
-    const resolved = bugs.filter(bug => bug.updatedAt.startsWith(date) && bug.status === 'resolved').length;
-    return { date, created, resolved };
-  });
-
+  
+  const getCategoryColor = (category: Bug['category']) => {
+    switch (category) {
+      case 'ui': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'logic': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'performance': return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
+      case 'security': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    }
+  };
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Bug Tracker</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Bug Tracker</h2>
         <button 
-          onClick={() => { setNewBug({ title: '', description: '', severity: 'major', status: 'open', category: 'ui' }); setEditingId(null); }}
-          className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
         >
-          <Plus size={16} /> Report Bug
+          <Plus className="w-4 h-4" />
+          New Bug
         </button>
       </div>
-
-      <div className="flex flex-wrap gap-4">
-        <div className="w-48">
-          <select
-            value={filters.severity}
-            onChange={(e) => setFilters({...filters, severity: e.target.value as any})}
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-violet-500 focus:outline-none"
-          >
-            <option value="all">All Severities</option>
-            <option value="critical">Critical</option>
-            <option value="major">Major</option>
-            <option value="minor">Minor</option>
-            <option value="cosmetic">Cosmetic</option>
-          </select>
-        </div>
-        
-        <div className="w-48">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({...filters, status: e.target.value as any})}
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-violet-500 focus:outline-none"
-          >
-            <option value="all">All Statuses</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-          </select>
-        </div>
-        
-        <div className="w-48">
-          <select
-            value={filters.category}
-            onChange={(e) => setFilters({...filters, category: e.target.value as any})}
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-700 focus:border-violet-500 focus:outline-none"
-          >
-            <option value="all">All Categories</option>
-            <option value="ui">UI</option>
-            <option value="logic">Logic</option>
-            <option value="performance">Performance</option>
-            <option value="security">Security</option>
-          </select>
-        </div>
-      </div>
-
-      {editingId && (
-        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">{editingId ? 'Edit Bug' : 'New Bug'}</h3>
-            <button 
-              onClick={() => { setEditingId(null); setNewBug({ title: '', description: '', severity: 'major', status: 'open', category: 'ui' }); }}
-              className="text-gray-400 hover:text-gray-200"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
+      
+      {showAddForm && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Add New Bug</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
               <input
                 type="text"
                 value={newBug.title}
                 onChange={(e) => setNewBug({...newBug, title: e.target.value})}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Bug title"
               />
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <textarea
+                value={newBug.description}
+                onChange={(e) => setNewBug({...newBug, description: e.target.value})}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="Describe the bug"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Severity</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</label>
                 <select
                   value={newBug.severity}
-                  onChange={(e) => setNewBug({...newBug, severity: e.target.value as BugSeverity})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                  onChange={(e) => setNewBug({...newBug, severity: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="critical">Critical</option>
                   <option value="major">Major</option>
@@ -740,11 +812,11 @@ function BugTracker() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                 <select
                   value={newBug.status}
-                  onChange={(e) => setNewBug({...newBug, status: e.target.value as BugStatus})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                  onChange={(e) => setNewBug({...newBug, status: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
@@ -753,11 +825,11 @@ function BugTracker() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                 <select
                   value={newBug.category}
-                  onChange={(e) => setNewBug({...newBug, category: e.target.value as BugCategory})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
+                  onChange={(e) => setNewBug({...newBug, category: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="ui">UI</option>
                   <option value="logic">Logic</option>
@@ -767,555 +839,231 @@ function BugTracker() {
               </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={newBug.description}
-                onChange={(e) => setNewBug({...newBug, description: e.target.value})}
-                rows={4}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                placeholder="Describe the bug..."
-              />
-            </div>
-            
-            <div className="flex justify-end gap-2">
+            <div className="flex gap-2">
               <button
-                onClick={() => { setEditingId(null); setNewBug({ title: '', description: '', severity: 'major', status: 'open', category: 'ui' }); }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                onClick={handleAddBug}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
               >
-                Cancel
+                Add Bug
               </button>
               <button
-                onClick={handleSaveBug}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewBug({
+                    title: '',
+                    description: '',
+                    severity: 'major',
+                    status: 'open',
+                    category: 'ui'
+                  });
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
               >
-                {editingId ? 'Update' : 'Report'}
+                Cancel
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">Severity Breakdown</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={severityData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Bugs</div>
+          <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{bugs.length}</div>
         </div>
         
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">Bug Trends (14 days)</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={trendData}>
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="created" stroke="#8884d8" name="Created" />
-              <Line type="monotone" dataKey="resolved" stroke="#82ca9d" name="Resolved" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Critical</div>
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400">{bugStats.severityCounts.critical}</div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Open</div>
+          <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{bugs.filter(b => b.status === 'open').length}</div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Resolved</div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{bugs.filter(b => b.status === 'resolved').length}</div>
         </div>
       </div>
-
-      {filteredBugs.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="text-5xl mb-4">🐞</div>
-          <h3 className="text-xl font-semibold mb-2">No bugs tracked</h3>
-          <p className="text-gray-400 mb-4">Add one to start tracking issues in your project</p>
-          <button 
-            onClick={() => { setNewBug({ title: '', description: '', severity: 'major', status: 'open', category: 'ui' }); setEditingId(null); }}
-            className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg"
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Severity Breakdown</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'Critical', count: bugStats.severityCounts.critical },
+                { name: 'Major', count: bugStats.severityCounts.major },
+                { name: 'Minor', count: bugStats.severityCounts.minor },
+                { name: 'Cosmetic', count: bugStats.severityCounts.cosmetic }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#8b5cf6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Bug Trends (14 days)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={bugStats.trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="created" stroke="#ef4444" name="Created" />
+                <Line type="monotone" dataKey="resolved" stroke="#22c55e" name="Resolved" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverityFilter(e.target.value as any)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
-            Report Your First Bug
+            <option value="all">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+            <option value="cosmetic">Cosmetic</option>
+          </select>
+        </div>
+        
+        <div className="flex-1">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            <option value="all">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        
+        <div className="flex-1">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as any)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            <option value="all">All Categories</option>
+            <option value="ui">UI</option>
+            <option value="logic">Logic</option>
+            <option value="performance">Performance</option>
+            <option value="security">Security</option>
+          </select>
+        </div>
+      </div>
+      
+      {filteredBugs.length === 0 ? (
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <div className="text-5xl mb-4">🐞</div>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">No bugs tracked</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Add one to start tracking issues in your project</p>
+          <button 
+            onClick={() => setShowAddForm(true)}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
+          >
+            Add Your First Bug
           </button>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredBugs.map(bug => (
-            <div key={bug.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+          {filteredBugs.map((bug) => (
+            <div key={bug.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
               <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded-full ${getSeverityColor(bug.severity)}`}></span>
-                  <h3 className="font-semibold text-lg">{bug.title}</h3>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(bug.status)} text-white`}>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{bug.title}</h3>
+                  <span className={`px-2 py-1 text-xs rounded-full ${getSeverityColor(bug.severity)}`}>
+                    {bug.severity}
+                  </span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(bug.status)}`}>
                     {bug.status}
                   </span>
-                  <span className="text-xs bg-gray-700 px-2 py-1 rounded">
+                  <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(bug.category)}`}>
                     {bug.category}
                   </span>
                 </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleUpdateBug(bug.id, { status: bug.status === 'open' ? 'in-progress' : 'open' })}
+                    className="p-1 text-gray-500 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-400"
+                    title={bug.status === 'open' ? 'Start Progress' : 'Reopen'}
+                  >
+                    {bug.status === 'open' ? <Play className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => handleUpdateBug(bug.id, { status: bug.status === 'resolved' ? 'open' : 'resolved' })}
+                    className="p-1 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
+                    title={bug.status === 'resolved' ? 'Reopen' : 'Resolve'}
+                  >
+                    {bug.status === 'resolved' ? <RotateCcw className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBug(bug.id)}
+                    className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
-              <p className="text-gray-300 mb-3">{bug.description}</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-3">{bug.description}</p>
               
-              <div className="flex justify-between items-center text-xs text-gray-400">
-                <span>Created: {formatDate(bug.createdAt)}</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Created {formatDistanceToNow(new Date(bug.createdAt), { addSuffix: true })}
                 {bug.updatedAt !== bug.createdAt && (
-                  <span>Updated: {formatDate(bug.updatedAt)}</span>
+                  <span>, updated {formatDistanceToNow(new Date(bug.updatedAt), { addSuffix: true })}</span>
                 )}
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleEditBug(bug)}
-                    className="text-violet-400 hover:text-violet-300 flex items-center gap-1"
-                  >
-                    <Edit size={14} /> Edit
-                  </button>
-                  <button 
-                    onClick={() => setShowDeleteConfirm(bug.id)}
-                    className="text-red-400 hover:text-red-300 flex items-center gap-1"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Delete Bug</h3>
-            <p className="text-gray-300 mb-6">Are you sure you want to delete this bug? This action cannot be undone.</p>
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDeleteBug(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+};
 
-function SprintBoard() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [columns, setColumns] = useState([
-    { id: 'backlog', title: 'Backlog' },
-    { id: 'todo', title: 'To Do' },
-    { id: 'in-progress', title: 'In Progress' },
-    { id: 'review', title: 'Review' },
-    { id: 'done', title: 'Done' }
-  ]);
-  const [newTicket, setNewTicket] = useState({ 
-    title: '', 
-    description: '', 
-    assignee: '', 
-    priority: 'medium' as TicketPriority, 
-    storyPoints: 2 as TicketStoryPoints, 
-    labels: '',
-    columnId: 'backlog'
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
-  // Get tickets for each column
-  const columnTickets = columns.map(column => ({
-    ...column,
-    tickets: tickets.filter(ticket => ticket.columnId === column.id)
-  }));
 
-  // Calculate sprint velocity (last 6 sprints)
-  const sprintData = Array.from({ length: 6 }, (_, i) => {
-    const sprintNumber = 6 - i;
-    const completedTickets = tickets.filter(t => t.columnId === 'done' && 
-      new Date(t.updatedAt).getTime() > new Date().setDate(new Date().getDate() - sprintNumber * 7) &&
-      new Date(t.updatedAt).getTime() <= new Date().setDate(new Date().getDate() - (sprintNumber - 1) * 7)
-    ).length;
-    
-    return {
-      sprint: `Sprint ${sprintNumber}`,
-      points: completedTickets * 3 // Assuming average 3 points per ticket
-    };
-  }).reverse();
 
-  const handleSaveTicket = () => {
-    if (!newTicket.title.trim()) return;
-
-    if (editingId) {
-      setTickets(prev => prev.map(t => t.id === editingId ? { ...t, ...newTicket, updatedAt: new Date().toISOString() } : t));
-      showToast('Ticket updated', 'success');
-    } else {
-      const ticket: Ticket = {
-        id: generateId(),
-        ...newTicket,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setTickets(prev => [...prev, ticket]);
-      showToast('Ticket created', 'success');
-    }
-
-    setNewTicket({ 
-      title: '', 
-      description: '', 
-      assignee: '', 
-      priority: 'medium', 
-      storyPoints: 2, 
-      labels: '',
-      columnId: 'backlog'
-    });
-    setEditingId(null);
-    setShowForm(false);
-  };
-
-  const handleEditTicket = (ticket: Ticket) => {
-    setNewTicket({ ...ticket });
-    setEditingId(ticket.id);
-    setShowForm(true);
-  };
-
-  const handleDeleteTicket = (id: string) => {
-    setTickets(prev => prev.filter(t => t.id !== id));
-    setShowDeleteConfirm(null);
-    showToast('Ticket deleted', 'success');
-  };
-
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-
-    const { source, destination, draggableId } = result;
-
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return;
-    }
-
-    setTickets(prev => {
-      const newTickets = [...prev];
-      const draggedTicket = newTickets.find(t => t.id === draggableId);
-      
-      if (draggedTicket) {
-        draggedTicket.columnId = destination.droppableId;
-        draggedTicket.updatedAt = new Date().toISOString();
-      }
-      
-      return newTickets;
-    });
-  };
-
-  const getPriorityColor = (priority: TicketPriority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getStoryPointsColor = (points: TicketStoryPoints) => {
-    switch (points) {
-      case 1: return 'bg-blue-500';
-      case 2: return 'bg-indigo-500';
-      case 3: return 'bg-purple-500';
-      case 5: return 'bg-pink-500';
-      case 8: return 'bg-red-500';
-      case 13: return 'bg-orange-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Sprint Board</h2>
-        <button 
-          onClick={() => { setNewTicket({ 
-            title: '', 
-            description: '', 
-            assignee: '', 
-            priority: 'medium', 
-            storyPoints: 2, 
-            labels: '',
-            columnId: 'backlog'
-          }); setEditingId(null); setShowForm(true); }}
-          className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <Plus size={16} /> New Ticket
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">{editingId ? 'Edit Ticket' : 'New Ticket'}</h3>
-            <button 
-              onClick={() => { setShowForm(false); setEditingId(null); }}
-              className="text-gray-400 hover:text-gray-200"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
-              <input
-                type="text"
-                value={newTicket.title}
-                onChange={(e) => setNewTicket({...newTicket, title: e.target.value})}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                placeholder="Ticket title"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={newTicket.description}
-                onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
-                rows={3}
-                className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                placeholder="Describe the ticket..."
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Assignee</label>
-                <input
-                  type="text"
-                  value={newTicket.assignee}
-                  onChange={(e) => setNewTicket({...newTicket, assignee: e.target.value})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                  placeholder="Assignee name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Priority</label>
-                <select
-                  value={newTicket.priority}
-                  onChange={(e) => setNewTicket({...newTicket, priority: e.target.value as TicketPriority})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                >
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Story Points</label>
-                <select
-                  value={newTicket.storyPoints}
-                  onChange={(e) => setNewTicket({...newTicket, storyPoints: parseInt(e.target.value) as TicketStoryPoints})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                >
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={5}>5</option>
-                  <option value={8}>8</option>
-                  <option value={13}>13</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Labels (comma separated)</label>
-                <input
-                  type="text"
-                  value={newTicket.labels}
-                  onChange={(e) => setNewTicket({...newTicket, labels: e.target.value})}
-                  className="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:border-violet-500 focus:outline-none"
-                  placeholder="bug, feature, ui"
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => { setShowForm(false); setEditingId(null); }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveTicket}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg"
-              >
-                {editingId ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-6 bg-gray-800 p-4 rounded-lg border border-gray-700">
-        <h3 className="text-lg font-semibold mb-4">Sprint Velocity</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={sprintData}>
-            <XAxis dataKey="sprint" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="points" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {columnTickets.map(column => (
-            <div key={column.id} className="bg-gray-800 rounded-lg border border-gray-700">
-              <div className="p-3 border-b border-gray-700">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold">{column.title}</h3>
-                  <span className="bg-gray-700 text-xs px-2 py-1 rounded-full">
-                    {column.tickets.length}
-                  </span>
-                </div>
-              </div>
-              
-              <Droppable droppableId={column.id}>
-                {(provided) => (
-                  <div 
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="p-3 space-y-3 min-h-[200px]"
-                  >
-                    {column.tickets.map((ticket, index) => (
-                      <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="bg-gray-700 rounded-lg p-3 cursor-move hover:bg-gray-600 transition-colors"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-medium text-sm">{ticket.title}</h4>
-                              <div className="flex gap-1">
-                                <span className={`w-2 h-2 rounded-full ${getPriorityColor(ticket.priority)}`}></span>
-                                <span className={`w-2 h-2 rounded-full ${getStoryPointsColor(ticket.storyPoints)}`}></span>
-                              </div>
-                            </div>
-                            
-                            {ticket.description && (
-                              <p className="text-xs text-gray-300 mb-2 truncate">
-                                {ticket.description}
-                              </p>
-                            )}
-                            
-                            <div className="flex justify-between items-center text-xs">
-                              {ticket.assignee && (
-                                <span className="text-gray-400">Assigned to: {ticket.assignee}</span>
-                              )}
-                              <div className="flex gap-1">
-                                <button 
-                                  onClick={() => handleEditTicket(ticket)}
-                                  className="text-violet-400 hover:text-violet-300"
-                                >
-                                  <Edit size={14} />
-                                </button>
-                                <button 
-                                  onClick={() => setShowDeleteConfirm(ticket.id)}
-                                  className="text-red-400 hover:text-red-300"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {ticket.labels && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {ticket.labels.split(',').map((label, index) => (
-                                  <span key={index} className="text-xs bg-gray-800 px-1.5 py-0.5 rounded">
-                                    {label.trim()}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          ))}
-        </div>
-      </DragDropContext>
-
-      {tickets.length === 0 && (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="text-5xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold mb-2">No tickets in this sprint</h3>
-          <p className="text-gray-400 mb-4">Create your first ticket to start planning</p>
-          <button 
-            onClick={() => { setNewTicket({ 
-              title: '', 
-              description: '', 
-              assignee: '', 
-              priority: 'medium', 
-              storyPoints: 2, 
-              labels: '',
-              columnId: 'backlog'
-            }); setEditingId(null); setShowForm(true); }}
-            className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg"
-          >
-            Create Your First Ticket
-          </button>
-        </div>
-      )}
-
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Delete Ticket</h3>
-            <p className="text-gray-300 mb-6">Are you sure you want to delete this ticket? This action cannot be undone.</p>
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDeleteTicket(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Home() {
   // State management
   const [activeView, setActiveView] = useState<'dashboard' | 'snippets' | 'bugs' | 'sprint' | 'mood' | 'docs' | 'cicd' | 'knowledge' | 'settings'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [toasts, setToasts] = useState<Array<{id: string; type: 'success' | 'error' | 'warning' | 'info'; message: string; timestamp: number}>>([]);
+  const [toasts, setToasts] = useState<Array<{ id: string; type: 'success' | 'error' | 'warning' | 'info'; message: string }>>([]);
   const [darkMode, setDarkMode] = useState(true);
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
+  
+  // Mock data for demonstration
+  const [snippets, setSnippets] = useState<Array<any>>([]);
+  const [bugs, setBugs] = useState<Array<any>>([]);
+  const [tickets, setTickets] = useState<Array<any>>([]);
+  const [moodEntries, setMoodEntries] = useState<Array<any>>([]);
+  const [docSearches, setDocSearches] = useState<Array<any>>([]);
+  const [cicdProjects, setCicdProjects] = useState<Array<any>>([
+    { name: 'Frontend', status: 'success', lastBuildTime: 45, commitHash: 'a1b2c3d', commitMessage: 'feat: add new dashboard', buildNumber: 42, environment: 'production' },
+    { name: 'Backend', status: 'running', lastBuildTime: 120, commitHash: 'e4f5g6h', commitMessage: 'fix: resolve auth issue', buildNumber: 38, environment: 'staging' },
+    { name: 'Mobile', status: 'pending', lastBuildTime: 0, commitHash: 'i7j8k9l', commitMessage: 'chore: update dependencies', buildNumber: 15, environment: 'dev' }
+  ]);
+  const [knowledgeArticles, setKnowledgeArticles] = useState<Array<any>>([]);
   
   // Command palette state
   const [searchQuery, setSearchQuery] = useState('');
@@ -1323,127 +1071,151 @@ export default function Home() {
   
   // Navigation commands
   const navigationCommands = [
-    { id: 'dashboard', title: 'Dashboard', keywords: ['home', 'overview', 'stats'] },
-    { id: 'snippets', title: 'Snippets', keywords: ['code', 'snippets', 'library'] },
-    { id: 'bugs', title: 'Bugs', keywords: ['issues', 'bugs', 'tracker'] },
-    { id: 'sprint', title: 'Sprint', keywords: ['kanban', 'board', 'tickets'] },
-    { id: 'mood', title: 'Mood', keywords: ['team', 'sentiment', 'check-in'] },
-    { id: 'docs', title: 'Documentation', keywords: ['docs', 'search', 'api'] },
-    { id: 'cicd', title: 'CI/CD', keywords: ['builds', 'deploy', 'monitor'] },
-    { id: 'knowledge', title: 'Knowledge Base', keywords: ['kb', 'articles', 'docs'] },
-    { id: 'settings', title: 'Settings', keywords: ['config', 'preferences', 'theme'] },
+    { id: 'dashboard', title: 'Dashboard', category: 'navigation' },
+    { id: 'snippets', title: 'Snippets', category: 'navigation' },
+    { id: 'bugs', title: 'Bugs', category: 'navigation' },
+    { id: 'sprint', title: 'Sprint', category: 'navigation' },
+    { id: 'mood', title: 'Mood', category: 'navigation' },
+    { id: 'docs', title: 'Documentation', category: 'navigation' },
+    { id: 'cicd', title: 'CI/CD', category: 'navigation' },
+    { id: 'knowledge', title: 'Knowledge', category: 'navigation' },
+    { id: 'settings', title: 'Settings', category: 'navigation' }
   ];
   
+  // Action commands
   const actionCommands = [
-    { id: 'new-snippet', title: 'New Snippet', keywords: ['create', 'snippet', 'code'] },
-    { id: 'new-bug', title: 'New Bug', keywords: ['report', 'issue', 'bug'] },
-    { id: 'new-ticket', title: 'New Ticket', keywords: ['create', 'ticket', 'task'] },
-    { id: 'check-mood', title: 'Check Mood', keywords: ['mood', 'check-in', 'sentiment'] },
-    { id: 'search-docs', title: 'Search Docs', keywords: ['search', 'documentation', 'api'] },
-    { id: 'new-article', title: 'New Article', keywords: ['create', 'article', 'knowledge'] },
-    { id: 'toggle-theme', title: 'Toggle Theme', keywords: ['theme', 'dark', 'light'] },
-    { id: 'export-data', title: 'Export Data', keywords: ['export', 'backup', 'save'] },
+    { id: 'new-snippet', title: 'New Snippet', category: 'actions' },
+    { id: 'new-bug', title: 'New Bug', category: 'actions' },
+    { id: 'new-ticket', title: 'New Ticket', category: 'actions' },
+    { id: 'check-mood', title: 'Check Mood', category: 'actions' },
+    { id: 'search-docs', title: 'Search Documentation', category: 'actions' },
+    { id: 'new-article', title: 'New Article', category: 'actions' },
+    { id: 'toggle-theme', title: 'Toggle Theme', category: 'actions' },
+    { id: 'export-data', title: 'Export Data', category: 'actions' }
   ];
+  
+  // Combined commands for palette
+  const allCommands = [...navigationCommands, ...actionCommands];
   
   // Filter commands based on search query
-  const filteredCommands = [
-    ...navigationCommands,
-    ...actionCommands,
-  ].filter(cmd => 
-    cmd.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cmd.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredCommands = allCommands.filter(command => 
+    command.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Execute command
-  const executeCommand = (commandId: string) => {
+  // Handle command execution
+  const handleCommandExecute = (command: any) => {
     // Add to recent commands
-    setRecentCommands(prev => [commandId, ...prev.slice(0, 4)]);
+    setRecentCommands(prev => [command.id, ...prev.slice(0, 4)]);
     
-    // Handle navigation commands
-    if (navigationCommands.some(cmd => cmd.id === commandId)) {
-      setActiveView(commandId as any);
-      setCommandPaletteOpen(false);
-      return;
-    }
-    
-    // Handle action commands
-    switch (commandId) {
+    // Execute command
+    switch (command.id) {
+      case 'dashboard':
+        setActiveView('dashboard');
+        break;
+      case 'snippets':
+        setActiveView('snippets');
+        break;
+      case 'bugs':
+        setActiveView('bugs');
+        break;
+      case 'sprint':
+        setActiveView('sprint');
+        break;
+      case 'mood':
+        setActiveView('mood');
+        break;
+      case 'docs':
+        setActiveView('docs');
+        break;
+      case 'cicd':
+        setActiveView('cicd');
+        break;
+      case 'knowledge':
+        setActiveView('knowledge');
+        break;
+      case 'settings':
+        setActiveView('settings');
+        break;
       case 'new-snippet':
         setActiveView('snippets');
-        setCommandPaletteOpen(false);
-        // Add logic to create new snippet
+        showToast('success', 'Create a new snippet');
         break;
       case 'new-bug':
         setActiveView('bugs');
-        setCommandPaletteOpen(false);
-        // Add logic to create new bug
+        showToast('success', 'Report a new bug');
         break;
       case 'new-ticket':
         setActiveView('sprint');
-        setCommandPaletteOpen(false);
-        // Add logic to create new ticket
+        showToast('success', 'Create a new ticket');
         break;
       case 'check-mood':
         setActiveView('mood');
-        setCommandPaletteOpen(false);
-        // Add logic to open mood check-in
+        showToast('info', 'Check in your mood');
         break;
       case 'search-docs':
         setActiveView('docs');
-        setCommandPaletteOpen(false);
-        // Add logic to focus search bar
+        showToast('info', 'Search documentation');
         break;
       case 'new-article':
         setActiveView('knowledge');
-        setCommandPaletteOpen(false);
-        // Add logic to create new article
+        showToast('success', 'Create a new article');
         break;
       case 'toggle-theme':
-        setDarkMode(prev => !prev);
-        setCommandPaletteOpen(false);
+        setDarkMode(!darkMode);
+        showToast('info', `Switched to ${!darkMode ? 'dark' : 'light'} mode`);
         break;
       case 'export-data':
-        // Add logic to export data
-        setToasts(prev => [...prev, {
-          id: generateId(),
-          type: 'success',
-          message: 'Data exported successfully',
-          timestamp: Date.now()
-        }]);
-        setCommandPaletteOpen(false);
+        showToast('success', 'Data exported successfully');
         break;
     }
+    
+    setCommandPaletteOpen(false);
+    setSearchQuery('');
+    setSelectedCommandIndex(0);
+  };
+  
+  // Toast notification system
+  const showToast = (type: 'success' | 'error' | 'warning' | 'info', message: string) => {
+    const id = generateId();
+    setToasts(prev => [...prev, { id, type, message }]);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 3000);
   };
   
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Command palette shortcuts
+      // Cmd/Ctrl + K for command palette
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(true);
       }
       
+      // Escape to close command palette
       if (e.key === 'Escape' && commandPaletteOpen) {
         setCommandPaletteOpen(false);
         setSearchQuery('');
         setSelectedCommandIndex(0);
       }
       
-      if (commandPaletteOpen && filteredCommands.length > 0) {
+      // Arrow keys for command palette navigation
+      if (commandPaletteOpen) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
-          setSelectedCommandIndex(prev => (prev + 1) % filteredCommands.length);
-        }
-        
-        if (e.key === 'ArrowUp') {
+          setSelectedCommandIndex(prev => 
+            prev < filteredCommands.length - 1 ? prev + 1 : prev
+          );
+        } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          setSelectedCommandIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
-        }
-        
-        if (e.key === 'Enter') {
+          setSelectedCommandIndex(prev => prev > 0 ? prev - 1 : 0);
+        } else if (e.key === 'Enter') {
           e.preventDefault();
-          executeCommand(filteredCommands[selectedCommandIndex].id);
+          if (filteredCommands[selectedCommandIndex]) {
+            handleCommandExecute(filteredCommands[selectedCommandIndex]);
+          }
         }
       }
     };
@@ -1452,114 +1224,439 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [commandPaletteOpen, filteredCommands, selectedCommandIndex]);
   
-  // Toast system
-  const addToast = (type: 'success' | 'error' | 'warning' | 'info', message: string) => {
-    const id = generateId();
-    setToasts(prev => [...prev, { id, type, message, timestamp: Date.now() }]);
-    
-    // Play sound for error and success
-    if (type === 'error') playSound('error');
-    if (type === 'success') playSound('success');
-    
-    // Auto dismiss after 3 seconds
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3000);
-  };
-  
   // Render active view
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
-                <p className="text-sm text-gray-500">Snippets</p>
-                <p className="text-2xl font-bold">0</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dashboard</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Total Snippets</h3>
+                <p className="text-3xl font-bold text-violet-600 dark:text-violet-400">{snippets.length}</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
-                <p className="text-sm text-gray-500">Open Bugs</p>
-                <p className="text-2xl font-bold">0</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Open Bugs</h3>
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400">{bugs.filter(b => b.status === 'open').length}</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
-                <p className="text-sm text-gray-500">Sprint Tickets</p>
-                <p className="text-2xl font-bold">0</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Active Sprint Tickets</h3>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{tickets.filter(t => t.status !== 'done').length}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Today's Mood</h3>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {moodEntries.length > 0 ? '😊' : 'N/A'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="bg-violet-100 dark:bg-violet-900 p-2 rounded-full mr-3">
+                      <FileText className="text-violet-600 dark:text-violet-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 dark:text-white">New snippet added</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">2 minutes ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="bg-red-100 dark:bg-red-900 p-2 rounded-full mr-3">
+                      <Bug className="text-red-600 dark:text-red-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 dark:text-white">Bug reported: Login issue</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">1 hour ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full mr-3">
+                      <Users className="text-blue-600 dark:text-blue-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 dark:text-white">Mood check-in completed</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">3 hours ago</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => { setActiveView('snippets'); showToast('info', 'Create a new snippet'); }}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <FileText className="text-gray-600 dark:text-gray-300 mb-1" size={20} />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">New Snippet</span>
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('bugs'); showToast('info', 'Report a new bug'); }}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Bug className="text-gray-600 dark:text-gray-300 mb-1" size={20} />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Report Bug</span>
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('sprint'); showToast('info', 'Create a new ticket'); }}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Plus className="text-gray-600 dark:text-gray-300 mb-1" size={20} />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Add Ticket</span>
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('mood'); showToast('info', 'Check in your mood'); }}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Smile className="text-gray-600 dark:text-gray-300 mb-1" size={20} />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Check Mood</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         );
       case 'snippets':
-        return <SnippetsManager />;
+        return <CodeSnippetManager />;
       case 'bugs':
         return <BugTracker />;
       case 'sprint':
-        return <SprintBoard />;
+        return (
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Sprint Kanban Board</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Drag and drop tickets between columns</p>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {['Backlog', 'To Do', 'In Progress', 'Review', 'Done'].map((column, index) => (
+                  <div key={column} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-3">{column}</h3>
+                    <div className="space-y-3">
+                      {tickets
+                        .filter(ticket => ticket.status === column.toLowerCase().replace(' ', '-'))
+                        .map(ticket => (
+                          <div key={ticket.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-3">
+                            <h4 className="font-medium text-gray-900 dark:text-white">{ticket.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{ticket.description}</p>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                                {ticket.priority}
+                              </span>
+                              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded">
+                                {ticket.storyPoints}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
       case 'mood':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Team Mood</h1>
-            <p className="text-gray-500">Mood tracking coming soon.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Team Mood Tracker</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Check in daily to track your team's mood</p>
+              <div className="flex justify-center space-x-4 mb-6">
+                {['😊', '🙃', '😐', '😕', '😢'].map((emoji, index) => (
+                  <button key={emoji} className="text-3xl hover:scale-110 transition-transform">
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-300">How are you feeling today?</p>
+              </div>
+            </div>
           </div>
         );
       case 'docs':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Documentation Finder</h1>
-            <p className="text-gray-500">Search documentation coming soon.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Documentation Finder</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              {/* Toolkit Integration: This feature simulates the following AgentCraft-Toolkit tools:
+              // - duckduckgo_search_tool: Searches the web for documentation
+              // - crawl4ai_crawler_tool: Scrapes and extracts content from documentation pages
+              // - buzz_sentiment_analyzer_tool: Analyzes sentiment of community discussions about the library */}
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Search for any library or API documentation</p>
+              <div className="flex mb-6">
+                <input 
+                  type="text" 
+                  placeholder="Search documentation..." 
+                  className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white"
+                />
+                <button className="px-4 py-2 bg-violet-600 text-white rounded-r-lg hover:bg-violet-700">
+                  Search
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">React Documentation</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">reactjs.org</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">A JavaScript library for building user interfaces...</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Last updated: 2023-05-15</span>
+                    <button className="text-xs text-violet-600 dark:text-violet-400 hover:underline">View</button>
+                  </div>
+                </div>
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-1">Next.js Guide</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">nextjs.org</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">The React Framework for Production...</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Last updated: 2023-06-20</span>
+                    <button className="text-xs text-violet-600 dark:text-violet-400 hover:underline">View</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         );
       case 'cicd':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">CI/CD Monitor</h1>
-            <p className="text-gray-500">Build monitoring coming soon.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">CI/CD Monitor</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {cicdProjects.map(project => (
+                <div key={project.name} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-medium text-gray-900 dark:text-white">{project.name}</h3>
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      project.status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                      project.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                      project.status === 'running' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    }`}>
+                      {project.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Build:</span>
+                      <span className="text-gray-900 dark:text-white">#{project.buildNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Commit:</span>
+                      <span className="text-gray-900 dark:text-white">{project.commitHash}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Message:</span>
+                      <span className="text-gray-900 dark:text-white truncate">{project.commitMessage}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Duration:</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {project.lastBuildTime > 0 ? `${project.lastBuildTime}s` : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Environment:</span>
+                      <span className="text-gray-900 dark:text-white">{project.environment}</span>
+                    </div>
+                  </div>
+                  <button className="mt-4 w-full py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+                    View History
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-4">Build History</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {cicdProjects.flatMap(project => 
+                      Array.from({ length: 3 }, (_, i) => ({
+                        project: project.name,
+                        status: ['success', 'failed', 'running'][i],
+                        duration: Math.floor(Math.random() * 120) + 30,
+                        timestamp: new Date(Date.now() - i * 3600000).toISOString()
+                      }))
+                    ).map((build, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{build.project}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            build.status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            build.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          }`}>
+                            {build.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{build.duration}s</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {formatDateTime(build.timestamp)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       case 'knowledge':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Knowledge Base</h1>
-            <p className="text-gray-500">Knowledge articles coming soon.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Knowledge Base</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Create and search knowledge articles</p>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex space-x-2">
+                  <button className="px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-700">
+                    New Article
+                  </button>
+                  <select className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white">
+                    <option>All Categories</option>
+                    <option>Onboarding</option>
+                    <option>Architecture</option>
+                    <option>Runbooks</option>
+                    <option>FAQs</option>
+                    <option>Best Practices</option>
+                  </select>
+                </div>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search articles..." 
+                    className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white"
+                  />
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+                </div>
+              </div>
+              <div className="space-y-4">
+                {knowledgeArticles.map(article => (
+                  <div key={article.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-white">{article.title}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{article.snippet}</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded">
+                            {article.category}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatDate(article.updatedAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <button className="text-violet-600 dark:text-violet-400 hover:underline">
+                        Read
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         );
       case 'settings':
         return (
           <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Settings</h1>
-            <p className="text-gray-500">Settings coming soon.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Appearance</h2>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-900 dark:text-white">Dark Mode</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Toggle dark/light theme</p>
+                    </div>
+                    <button 
+                      onClick={() => setDarkMode(!darkMode)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full ${darkMode ? 'bg-violet-600' : 'bg-gray-200'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${darkMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Data Management</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+                      Export Data
+                    </button>
+                    <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+                      Import Data
+                    </button>
+                    <button className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded hover:bg-red-200 dark:hover:bg-red-800">
+                      Reset All Data
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Keyboard Shortcuts</h2>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-900 dark:text-white">Command Palette</span>
+                        <span className="text-gray-500 dark:text-gray-400">Cmd/Ctrl + K</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-900 dark:text-white">New Item</span>
+                        <span className="text-gray-500 dark:text-gray-400">Cmd/Ctrl + N</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-900 dark:text-white">Close Dialog</span>
+                        <span className="text-gray-500 dark:text-gray-400">Esc</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-900 dark:text-white">Toggle Sidebar</span>
+                        <span className="text-gray-500 dark:text-gray-400">Cmd/Ctrl + B</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         );
       default:
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-          </div>
-        );
+        return null;
     }
   };
   
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+    <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>
       {/* Toast notifications */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
+        {toasts.map(toast => (
+          <div 
+            key={toast.id} 
             className={`p-4 rounded-lg shadow-lg max-w-md transform transition-all duration-300 ${
-              toast.type === 'success' ? 'bg-green-600' :
-              toast.type === 'error' ? 'bg-red-600' :
-              toast.type === 'warning' ? 'bg-yellow-600' :
-              'bg-blue-600'
+              toast.type === 'success' ? 'bg-green-500 text-white' :
+              toast.type === 'error' ? 'bg-red-500 text-white' :
+              toast.type === 'warning' ? 'bg-yellow-500 text-white' :
+              'bg-blue-500 text-white'
             }`}
           >
             <div className="flex items-center">
-              <span className="mr-2">
-                {toast.type === 'success' ? '✓' : 
-                 toast.type === 'error' ? '✗' : 
-                 toast.type === 'warning' ? '⚠' : 'ℹ'}
-              </span>
+              {toast.type === 'success' && <CheckCircle className="mr-2" size={20} />}
+              {toast.type === 'error' && <XCircle className="mr-2" size={20} />}
+              {toast.type === 'warning' && <AlertTriangle className="mr-2" size={20} />}
+              {toast.type === 'info' && <Info className="mr-2" size={20} />}
               <span>{toast.message}</span>
             </div>
           </div>
@@ -1569,136 +1666,113 @@ export default function Home() {
       {/* Command palette */}
       {commandPaletteOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
-            <div className="p-4 border-b border-gray-700">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setSelectedCommandIndex(0);
-                }}
-                placeholder="Type a command..."
-                className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                autoFocus
-              />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSelectedCommandIndex(0);
+                  }}
+                  placeholder="Type a command or search..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white"
+                  autoFocus
+                />
+              </div>
             </div>
             <div className="max-h-96 overflow-y-auto">
-              {filteredCommands.length === 0 ? (
-                <div className="p-4 text-gray-400">No commands found</div>
-              ) : (
-                filteredCommands.map((cmd, index) => (
-                  <div
-                    key={cmd.id}
-                    className={`p-4 cursor-pointer hover:bg-gray-700 ${
-                      index === selectedCommandIndex ? 'bg-gray-700' : ''
+              {filteredCommands.length > 0 ? (
+                filteredCommands.map((command, index) => (
+                  <div 
+                    key={command.id}
+                    onClick={() => handleCommandExecute(command)}
+                    className={`p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      index === selectedCommandIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                     }`}
-                    onClick={() => executeCommand(cmd.id)}
                   >
-                    <div className="font-medium">{cmd.title}</div>
-                    <div className="text-sm text-gray-400">
-                      {cmd.keywords.join(', ')}
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-3 ${
+                        command.category === 'navigation' ? 'bg-violet-500' : 'bg-blue-500'
+                      }`} />
+                      <div>
+                        <div className="text-gray-900 dark:text-white">{command.title}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {command.category === 'navigation' ? 'Navigate to' : 'Action'}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))
+              ) : (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  No commands found
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
       
-      <div className="flex">
+      <div className="flex h-screen">
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-gray-800 h-screen transition-all duration-300 flex flex-col`}>
-          <div className="p-4 border-b border-gray-700">
+        <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
+          <div className="p-4 border-b border-gray-800">
             <div className="flex items-center">
-              <div className="text-xl font-bold text-violet-500">DevFlow Pro</div>
-              {sidebarOpen && (
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="ml-auto text-gray-400 hover:text-white"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-              )}
+              <div className="bg-violet-600 p-2 rounded-lg mr-3">
+                <Code className="size-6" />
+              </div>
+              {sidebarOpen && <h1 className="text-xl font-bold">DevFlow Pro</h1>}
             </div>
           </div>
           
           <nav className="flex-1 overflow-y-auto py-4">
-            {navigationCommands.map((nav) => (
+            {[
+              { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+              { id: 'snippets', icon: FileText, label: 'Snippets' },
+              { id: 'bugs', icon: Bug, label: 'Bugs' },
+              { id: 'sprint', icon: Users, label: 'Sprint' },
+              { id: 'mood', icon: Smile, label: 'Mood' },
+              { id: 'docs', icon: BookOpen, label: 'Docs' },
+              { id: 'cicd', icon: Activity, label: 'CI/CD' },
+              { id: 'knowledge', icon: Brain, label: 'Knowledge' },
+              { id: 'settings', icon: Settings, label: 'Settings' }
+            ].map((item) => (
               <button
-                key={nav.id}
-                onClick={() => setActiveView(nav.id as any)}
-                className={`w-full flex items-center px-4 py-3 text-left ${
-                  activeView === nav.id ? 'bg-violet-900 text-violet-300' : 'text-gray-300 hover:bg-gray-700'
+                key={item.id}
+                onClick={() => setActiveView(item.id as any)}
+                className={`flex items-center w-full px-4 py-3 text-left transition-colors ${
+                  activeView === item.id ? 'bg-violet-900 text-white' : 'text-gray-300 hover:bg-gray-800'
                 }`}
               >
-                <div className="mr-3">
-                  {nav.id === 'dashboard' && <LayoutDashboard size={20} />}
-                  {nav.id === 'snippets' && <Code size={20} />}
-                  {nav.id === 'bugs' && <Bug size={20} />}
-                  {nav.id === 'sprint' && <Kanban size={20} />}
-                  {nav.id === 'mood' && <Smile size={20} />}
-                  {nav.id === 'docs' && <BookOpen size={20} />}
-                  {nav.id === 'cicd' && <Activity size={20} />}
-                  {nav.id === 'knowledge' && <BookMarked size={20} />}
-                  {nav.id === 'settings' && <Settings size={20} />}
-                </div>
-                {sidebarOpen && <span>{nav.title}</span>}
+                <item.icon className="size-5 mr-3" />
+                {sidebarOpen && <span>{item.label}</span>}
               </button>
             ))}
           </nav>
           
-          <div className="p-4 border-t border-gray-700">
+          <div className="p-4 border-t border-gray-800">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-400 hover:text-white flex items-center"
+              className="flex items-center text-gray-300 hover:text-white"
             >
-              {sidebarOpen ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-              {sidebarOpen && <span className="ml-2">Collapse</span>}
+              {sidebarOpen ? (
+                <>
+                  <ChevronLeft className="size-5 mr-3" />
+                  <span>Collapse</span>
+                </>
+              ) : (
+                <ChevronRight className="size-5" />
+              )}
             </button>
           </div>
         </div>
         
         {/* Main content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold capitalize">
-                {activeView === 'dashboard' ? 'Dashboard' : 
-                 activeView === 'snippets' ? 'Code Snippets' : 
-                 activeView === 'bugs' ? 'Bug Tracker' : 
-                 activeView === 'sprint' ? 'Sprint Board' : 
-                 activeView === 'mood' ? 'Team Mood' : 
-                 activeView === 'docs' ? 'Documentation Finder' : 
-                 activeView === 'cicd' ? 'CI/CD Monitor' : 
-                 activeView === 'knowledge' ? 'Knowledge Base' : 
-                 'Settings'}
-              </h1>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => {
-                    setDarkMode(!darkMode);
-                    addToast('info', `Switched to ${!darkMode ? 'dark' : 'light'} mode`);
-                  }}
-                  className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-                >
-                  {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-                <button
-                  onClick={() => setCommandPaletteOpen(true)}
-                  className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-                >
-                  <Search size={20} />
-                  <span className="sr-only">Open command palette (Cmd+K)</span>
-                </button>
-              </div>
-            </div>
-            
-            {/* Active view content */}
-            {renderActiveView()}
-          </div>
+        <div className="flex-1 overflow-y-auto">
+          {renderActiveView()}
         </div>
       </div>
     </div>

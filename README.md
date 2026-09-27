@@ -1,32 +1,31 @@
 # DevFlow Pro
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
 
-A comprehensive developer productivity platform that consolidates essential tools into a single application.
+A comprehensive developer productivity platform that brings together all the tools you need in one place. DevFlow Pro extends DevFlow Lite with additional features for enhanced team collaboration and productivity.
 
 ## Features
 
-- **Code Snippet Manager**: Save, organize, and search code snippets with syntax highlighting
-- **Bug Tracker**: Track bugs with severity levels, statistics, and visual charts
-- **Sprint Kanban Board**: Drag-and-drop task management with velocity tracking
-- **Team Mood Tracker**: Monitor team well-being with mood check-ins and trends
+- **Code Snippet Manager**: Save, organize, and search your code snippets with syntax highlighting
+- **Bug Tracker**: Track and visualize bugs with severity levels and statistics
+- **Sprint Kanban Board**: Drag-and-drop interface for agile sprint planning
+- **Team Mood Tracker**: Monitor team morale with daily check-ins and mood trends
 - **Documentation Finder**: Search and bookmark technical documentation
-- **CI/CD Monitor**: Track build statuses and deployment environments
-- **Knowledge Base**: Create and organize technical documentation with markdown support
+- **CI/CD Monitor**: Track build statuses and deployment progress
+- **Knowledge Base**: Create and organize technical documentation
+- **Dashboard**: Overview of all modules with quick stats and recent activity
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 18, TypeScript
-- **Styling**: Tailwind CSS with dark mode support
-- **Charts**: Recharts for data visualization
-- **Icons**: Lucide React
+- **Styling**: Tailwind CSS with dark mode
+- **Charts**: Recharts
 - **Drag & Drop**: @hello-pangea/dnd
-- **Markdown**: Marked.js
+- **Markdown**: marked
+- **Icons**: Lucide React
 - **Dates**: date-fns
-- **Audio**: Web Audio API
 
 ## Quick Start
 
@@ -35,12 +34,17 @@ A comprehensive developer productivity platform that consolidates essential tool
 3. Run the development server: `npm run dev`
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Usage
+## Architecture
 
-- Use the sidebar to navigate between different sections
-- Press `Cmd+K` (Mac) or `Ctrl+K` (Windows) to open the command palette
-- All data is automatically saved to your browser's local storage
-- Customize your experience in the Settings panel
+DevFlow Pro follows a single-file architecture pattern where all components, utilities, and state management are contained within `src/app/page.tsx`. This approach simplifies the codebase and makes it easier to understand and maintain.
+
+All data is persisted in localStorage and automatically saved on changes. The app uses React 19's lazy useState pattern for efficient data loading.
+
+## Keyboard Shortcuts
+
+- `Cmd/Ctrl + K`: Open command palette
+- `Cmd/Ctrl + N`: Create new item (context-dependent)
+- `Esc`: Close modals and dialogs
 
 ## Contributing
 

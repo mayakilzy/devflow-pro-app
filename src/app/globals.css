@@ -59,43 +59,16 @@
 }
 
 @layer components {
-  .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground;
+  .code-block {
+    @apply bg-muted p-4 rounded-md overflow-x-auto text-sm;
   }
-  .sidebar-item.active {
-    @apply bg-primary text-primary-foreground;
+  .chart-container {
+    @apply w-full h-64;
   }
-  .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  .dragging {
+    @apply opacity-50 cursor-grabbing;
   }
-  .button {
-    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
-  }
-  .button-primary {
-    @apply button bg-primary text-primary-foreground hover:bg-primary/90;
-  }
-  .button-secondary {
-    @apply button bg-secondary text-secondary-foreground hover:bg-secondary/80;
-  }
-  .button-destructive {
-    @apply button bg-destructive text-destructive-foreground hover:bg-destructive/90;
-  }
-  .button-outline {
-    @apply button border border-input bg-background hover:bg-accent hover:text-accent-foreground;
-  }
-  .button-ghost {
-    @apply button hover:bg-accent hover:text-accent-foreground;
-  }
-  .input {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-  .toast {
-    @apply pointer-events-auto flex w-full max-w-md items-center justify-between space-x-4 overflow-hidden rounded-lg border p-6 shadow-lg transition-all transform translate-y-0 opacity-100;
-  }
-  .toast-enter {
-    @apply transform translate-y-2 opacity-0;
-  }
-  .toast-exit {
-    @apply transform translate-y-0 opacity-100;
+  .drag-over {
+    @apply bg-blue-100 dark:bg-blue-900;
   }
 }
