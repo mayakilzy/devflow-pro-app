@@ -59,25 +59,46 @@
 }
 
 @layer components {
-  .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground;
+  .code-block {
+    @apply bg-muted p-4 rounded-md overflow-x-auto text-sm;
   }
-  .sidebar-item.active {
-    @apply bg-primary text-primary-foreground;
+  .markdown-body {
+    @apply prose prose-slate dark:prose-invert max-w-none;
   }
-  .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  .markdown-body h1 {
+    @apply text-2xl font-bold mb-4;
   }
-  .empty-state {
-    @apply flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center;
+  .markdown-body h2 {
+    @apply text-xl font-semibold mb-3;
   }
-  .toast {
-    @apply fixed bottom-4 right-4 z-50 max-w-md rounded-lg border bg-background p-4 shadow-lg transition-all duration-300 transform translate-y-0 opacity-100;
+  .markdown-body h3 {
+    @apply text-lg font-medium mb-2;
   }
-  .toast-enter {
-    @apply translate-y-4 opacity-0;
+  .markdown-body p {
+    @apply mb-4;
   }
-  .toast-exit {
-    @apply translate-y-0 opacity-0;
+  .markdown-body ul, .markdown-body ol {
+    @apply mb-4 pl-6;
+  }
+  .markdown-body li {
+    @apply mb-1;
+  }
+  .markdown-body code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+  }
+  .markdown-body pre {
+    @apply code-block my-4;
+  }
+  .markdown-body blockquote {
+    @apply border-l-4 border-primary pl-4 italic my-4;
+  }
+  .markdown-body table {
+    @apply w-full border-collapse my-4;
+  }
+  .markdown-body th, .markdown-body td {
+    @apply border border-border p-2;
+  }
+  .markdown-body th {
+    @apply bg-muted font-semibold;
   }
 }
