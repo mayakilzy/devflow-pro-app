@@ -1,0 +1,15 @@
+[00:00:00.787] Server  LOG     ✓ Ready in 576ms
+[00:00:05.541] Server  LOG     ○ Compiling / ...
+[00:00:05.717] Server  ERROR   ⨯ ./src/app/page.tsx:1092:3
+Parsing ecmascript source code failed
+  1090 |
+  1091 | function TeamMoodTracker() {
+> 1092 |   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
+       |   ^^^^^
+  1093 |   const [selectedMood, setSelectedMood] = useState<number>(0);
+  1094 |   const [moodNote, setMoodNote] = useState<string>('');
+  1095 |   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+Expected '</', got 'const'
+
+
