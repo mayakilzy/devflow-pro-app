@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
 A comprehensive developer productivity platform that consolidates essential tools into a single application.
 
@@ -12,9 +12,9 @@ A comprehensive developer productivity platform that consolidates essential tool
 - **Code Snippet Manager**: Save, organize, and search code snippets with syntax highlighting
 - **Bug Tracker**: Track bugs with severity levels, statistics, and visual charts
 - **Sprint Kanban Board**: Drag-and-drop task management with velocity tracking
-- **Team Mood Tracker**: Daily mood check-ins with trends and analytics
+- **Team Mood Tracker**: Monitor team well-being with mood check-ins and trends
 - **Documentation Finder**: Search and bookmark technical documentation
-- **CI/CD Monitor**: Real-time build status tracking with alerts
+- **CI/CD Monitor**: Track build statuses and deployment environments
 - **Knowledge Base**: Create and organize technical documentation with markdown support
 
 ## Tech Stack
@@ -23,10 +23,10 @@ A comprehensive developer productivity platform that consolidates essential tool
 - **Styling**: Tailwind CSS with dark mode support
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
-- **Markdown**: Marked.js for rendering
 - **Drag & Drop**: @hello-pangea/dnd
+- **Markdown**: Marked.js
 - **Dates**: date-fns
-- **Audio**: Web Audio API for notifications
+- **Audio**: Web Audio API
 
 ## Quick Start
 
@@ -37,9 +37,9 @@ A comprehensive developer productivity platform that consolidates essential tool
 
 ## Usage
 
-- Use the sidebar to navigate between different modules
+- Use the sidebar to navigate between different sections
 - Press `Cmd+K` (Mac) or `Ctrl+K` (Windows) to open the command palette
-- All data is automatically saved to localStorage
+- All data is automatically saved to your browser's local storage
 - Customize your experience in the Settings panel
 
 ## Contributing

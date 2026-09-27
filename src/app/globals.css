@@ -59,46 +59,43 @@
 }
 
 @layer components {
-  .code-block {
-    @apply bg-muted p-4 rounded-md overflow-x-auto text-sm;
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground;
   }
-  .markdown-body {
-    @apply prose prose-slate dark:prose-invert max-w-none;
+  .sidebar-item.active {
+    @apply bg-primary text-primary-foreground;
   }
-  .markdown-body h1 {
-    @apply text-2xl font-bold mb-4;
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
   }
-  .markdown-body h2 {
-    @apply text-xl font-semibold mb-3;
+  .button {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
-  .markdown-body h3 {
-    @apply text-lg font-medium mb-2;
+  .button-primary {
+    @apply button bg-primary text-primary-foreground hover:bg-primary/90;
   }
-  .markdown-body p {
-    @apply mb-4;
+  .button-secondary {
+    @apply button bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
-  .markdown-body ul, .markdown-body ol {
-    @apply mb-4 pl-6;
+  .button-destructive {
+    @apply button bg-destructive text-destructive-foreground hover:bg-destructive/90;
   }
-  .markdown-body li {
-    @apply mb-1;
+  .button-outline {
+    @apply button border border-input bg-background hover:bg-accent hover:text-accent-foreground;
   }
-  .markdown-body code {
-    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+  .button-ghost {
+    @apply button hover:bg-accent hover:text-accent-foreground;
   }
-  .markdown-body pre {
-    @apply code-block my-4;
+  .input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
-  .markdown-body blockquote {
-    @apply border-l-4 border-primary pl-4 italic my-4;
+  .toast {
+    @apply pointer-events-auto flex w-full max-w-md items-center justify-between space-x-4 overflow-hidden rounded-lg border p-6 shadow-lg transition-all transform translate-y-0 opacity-100;
   }
-  .markdown-body table {
-    @apply w-full border-collapse my-4;
+  .toast-enter {
+    @apply transform translate-y-2 opacity-0;
   }
-  .markdown-body th, .markdown-body td {
-    @apply border border-border p-2;
-  }
-  .markdown-body th {
-    @apply bg-muted font-semibold;
+  .toast-exit {
+    @apply transform translate-y-0 opacity-100;
   }
 }

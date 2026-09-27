@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'DevFlow Pro - Developer Productivity Platform',
-  description: 'A comprehensive developer productivity platform with code snippet management, bug tracking, sprint planning, team mood tracking, documentation finder, CI/CD monitoring, and knowledge base.',
+  description: 'A comprehensive developer productivity platform with code snippets, bug tracking, sprint planning, team mood monitoring, documentation finder, CI/CD monitoring, and knowledge base.',
 };
 
 export default function RootLayout({
@@ -15,12 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full`}>
-        <div className="flex h-full">
-          {children}
-        </div>
-      </body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
